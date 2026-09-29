@@ -84,8 +84,7 @@ else (blocked, pending\nили quarantine)
 endif
 
 legend bottom
-  Это алгоритм прецедента «Скачать артефакт».
-  Имя в шаге — метод класса с диаграммы классов.
+  Алгоритм прецедента «Скачать артефакт».
 endlegend
 
 @enduml
