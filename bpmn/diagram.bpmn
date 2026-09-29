@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Defs_SecCrate" targetNamespace="http://seccrate.local/bpmn" exporter="seccrate-uml">
+  <bpmn:collaboration id="Collaboration_SecCrate">
+    <bpmn:participant id="Participant_SecCrate" name="SecCrate — получить зависимость" processRef="Process_GetArtifact" />
+  </bpmn:collaboration>
+  <bpmn:collaboration id="Collaboration_1p4x4zd">
+    <bpmn:participant id="Participant_09eqrsx" processRef="Process_GetArtifact" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_GetArtifact" name="Получить зависимость через SecCrate" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_Dev" name="Разработчик" />
+      <bpmn:lane id="Lane_Platform" name="Платформа SecCrate" />
+      <bpmn:lane id="Lane_Scan" name="Сканирование" />
+      <bpmn:lane id="Lane_04k6vgk" name="Разработчик / Клиент">
+        <bpmn:flowNodeRef>Task_Request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Start_Need</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Forbidden</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Blocked</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Retry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Denied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Quarantine</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Ok</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_12ovckq">
+        <bpmn:flowNodeRef>Task_Auth</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Auth</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Find</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Cache</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Ssrf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Ssrf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Fetch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Pending</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Status</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Claim</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Engines</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timer_Wait</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Worst</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Verdict</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Stream</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_Wait</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_1swzh4g">
+          <bpmn:lane id="Lane_0wpxm42" name="Платорма SecCrate">
+            <bpmn:flowNodeRef>Task_Auth</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gw_Auth</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Task_Find</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gw_Cache</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Task_Ssrf</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gw_Ssrf</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Task_Fetch</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Task_Pending</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gw_Status</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Task_Stream</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gw_Wait</bpmn:flowNodeRef>
+          </bpmn:lane>
+          <bpmn:lane id="Lane_0nvrid9" name="Сканеры">
+            <bpmn:flowNodeRef>Task_Claim</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Task_Engines</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Timer_Wait</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Task_Worst</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gw_Verdict</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_Start" sourceRef="Start_Need" targetRef="Task_Request" />
+    <bpmn:sequenceFlow id="Flow_To_Auth" sourceRef="Task_Request" targetRef="Task_Auth" />
+    <bpmn:sequenceFlow id="Flow_To_GwAuth" sourceRef="Task_Auth" targetRef="Gw_Auth" />
+    <bpmn:sequenceFlow id="Flow_Auth_No" name="нет" sourceRef="Gw_Auth" targetRef="End_Denied" />
+    <bpmn:sequenceFlow id="Flow_Auth_Yes" name="да" sourceRef="Gw_Auth" targetRef="Task_Find" />
+    <bpmn:sequenceFlow id="Flow_To_Cache" sourceRef="Task_Find" targetRef="Gw_Cache" />
+    <bpmn:sequenceFlow id="Flow_Cache_Yes" name="да" sourceRef="Gw_Cache" targetRef="Gw_Status" />
+    <bpmn:sequenceFlow id="Flow_Cache_No" name="нет" sourceRef="Gw_Cache" targetRef="Task_Ssrf" />
+    <bpmn:sequenceFlow id="Flow_To_GwSsrf" sourceRef="Task_Ssrf" targetRef="Gw_Ssrf" />
+    <bpmn:sequenceFlow id="Flow_Ssrf_No" name="нет" sourceRef="Gw_Ssrf" targetRef="End_Forbidden" />
+    <bpmn:sequenceFlow id="Flow_Ssrf_Yes" name="да" sourceRef="Gw_Ssrf" targetRef="Task_Fetch" />
+    <bpmn:sequenceFlow id="Flow_To_Pending" sourceRef="Task_Fetch" targetRef="Task_Pending" />
+    <bpmn:sequenceFlow id="Flow_Pending_Status" sourceRef="Task_Pending" targetRef="Gw_Status" />
+    <bpmn:sequenceFlow id="Flow_Status_Block" name="blocked" sourceRef="Gw_Status" targetRef="End_Blocked" />
+    <bpmn:sequenceFlow id="Flow_Status_Pending" name="pending" sourceRef="Gw_Status" targetRef="Task_Stream" />
+    <bpmn:sequenceFlow id="Flow_Fail" name="FAIL" sourceRef="Gw_Verdict" targetRef="End_Blocked" />
+    <bpmn:sequenceFlow id="Flow_Pass" name="PASS" sourceRef="Gw_Verdict" targetRef="Task_Stream" />
+    <bpmn:sequenceFlow id="Flow_Stream_Ok" sourceRef="Task_Stream" targetRef="End_Ok" />
+    <bpmn:sequenceFlow id="Flow_Wait_No" name="нет" sourceRef="Gw_Wait" targetRef="Task_Stream" />
+    <bpmn:sequenceFlow id="Flow_Wait_Yes" name="да" sourceRef="Gw_Wait" targetRef="Timer_Wait" />
+    <bpmn:sequenceFlow id="Flow_After_Timer" sourceRef="Timer_Wait" targetRef="Task_Claim" />
+    <bpmn:sequenceFlow id="Flow_Claim" sourceRef="Task_Claim" targetRef="Task_Engines" />
+    <bpmn:sequenceFlow id="Flow_Engines" sourceRef="Task_Engines" targetRef="Task_Worst" />
+    <bpmn:sequenceFlow id="Flow_Worst" sourceRef="Task_Worst" targetRef="Gw_Verdict" />
+    <bpmn:sequenceFlow id="Flow_Error" name="ERROR" sourceRef="Gw_Verdict" targetRef="End_Quarantine" />
+    <bpmn:userTask id="Task_Request" name="Запросить артефакт">
+      <bpmn:incoming>Flow_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_Auth</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:startEvent id="Start_Need" name="Нужен пакет">
+      <bpmn:outgoing>Flow_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="End_Forbidden" name="Адрес запрещён">
+      <bpmn:incoming>Flow_Ssrf_No</bpmn:incoming>
+      <bpmn:errorEventDefinition id="Err_Forbidden" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Blocked" name="Карточка блокировки">
+      <bpmn:incoming>Flow_Status_Block</bpmn:incoming>
+      <bpmn:incoming>Flow_Fail</bpmn:incoming>
+      <bpmn:errorEventDefinition id="Err_Blocked" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Retry" name="Повторите запрос">
+      <bpmn:incoming>Flow_0tfg1xr</bpmn:incoming>
+      <bpmn:errorEventDefinition id="Err_Retry" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0bb8kzi" sourceRef="Task_Stream" targetRef="Gw_Wait" />
+    <bpmn:serviceTask id="Task_Auth" name="Проверить токен и выдачу">
+      <bpmn:incoming>Flow_To_Auth</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_GwAuth</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Auth" name="Доступ есть?" default="Flow_Auth_Yes">
+      <bpmn:incoming>Flow_To_GwAuth</bpmn:incoming>
+      <bpmn:outgoing>Flow_Auth_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Auth_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Denied" name="Нет доступа">
+      <bpmn:incoming>Flow_Auth_No</bpmn:incoming>
+      <bpmn:errorEventDefinition id="Err_Denied" />
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Task_Find" name="Найти артефакт">
+      <bpmn:incoming>Flow_Auth_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_Cache</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Cache" name="Уже в хранилище?" default="Flow_Cache_Yes">
+      <bpmn:incoming>Flow_To_Cache</bpmn:incoming>
+      <bpmn:outgoing>Flow_Cache_Yes</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Cache_No</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Ssrf" name="Проверить адрес upstream">
+      <bpmn:incoming>Flow_Cache_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_GwSsrf</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Ssrf" name="Адрес разрешён?" default="Flow_Ssrf_Yes">
+      <bpmn:incoming>Flow_To_GwSsrf</bpmn:incoming>
+      <bpmn:outgoing>Flow_Ssrf_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Ssrf_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Fetch" name="Скачать пакет и сохранить в CAS">
+      <bpmn:incoming>Flow_Ssrf_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_Pending</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Pending" name="Создать артефакт pending и задачу скана">
+      <bpmn:incoming>Flow_To_Pending</bpmn:incoming>
+      <bpmn:outgoing>Flow_Pending_Status</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Status" name="Какой статус?">
+      <bpmn:incoming>Flow_Cache_Yes</bpmn:incoming>
+      <bpmn:incoming>Flow_Pending_Status</bpmn:incoming>
+      <bpmn:outgoing>Flow_Status_Block</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Status_Pending</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0tfg1xr" sourceRef="Task_Stream" targetRef="End_Retry" />
+    <bpmn:serviceTask id="Task_Claim" name="Взять задачу из очереди">
+      <bpmn:incoming>Flow_After_Timer</bpmn:incoming>
+      <bpmn:outgoing>Flow_Claim</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Engines" name="Проверить Grype, Trivy и OSV">
+      <bpmn:incoming>Flow_Claim</bpmn:incoming>
+      <bpmn:outgoing>Flow_Engines</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:intermediateCatchEvent id="Timer_Wait" name="Не дольше 15 секунд">
+      <bpmn:incoming>Flow_Wait_Yes</bpmn:incoming>
+      <bpmn:outgoing>Flow_After_Timer</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_15">
+        <bpmn:timeDuration>PT15S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="Task_Worst" name="Выбрать самый строгий вердикт">
+      <bpmn:incoming>Flow_Engines</bpmn:incoming>
+      <bpmn:outgoing>Flow_Worst</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Verdict" name="Вердикт">
+      <bpmn:incoming>Flow_Worst</bpmn:incoming>
+      <bpmn:outgoing>Flow_Pass</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fail</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Error</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Task_Stream" name="Отдать файл потоком">
+      <bpmn:incoming>Flow_Pass</bpmn:incoming>
+      <bpmn:incoming>Flow_Status_Pending</bpmn:incoming>
+      <bpmn:incoming>Flow_Wait_No</bpmn:incoming>
+      <bpmn:outgoing>Flow_Stream_Ok</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0bb8kzi</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0tfg1xr</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gw_Wait" name="Ждать скан?" default="Flow_Wait_Yes">
+      <bpmn:incoming>Flow_0bb8kzi</bpmn:incoming>
+      <bpmn:outgoing>Flow_Wait_No</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Wait_Yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="End_Quarantine" name="Карантин">
+      <bpmn:incoming>Flow_Error</bpmn:incoming>
+      <bpmn:errorEventDefinition id="Err_Quarantine" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_Ok" name="Пакет получен">
+      <bpmn:incoming>Flow_Stream_Ok</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Process_GetArtifact">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_GetArtifact" bpmnElement="Collaboration_1p4x4zd">
+      <bpmndi:BPMNShape id="Participant_09eqrsx_di" bpmnElement="Participant_09eqrsx" isHorizontal="true">
+        <dc:Bounds x="-640" y="-80" width="2995" height="910" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_04k6vgk_di" bpmnElement="Lane_04k6vgk" isHorizontal="true">
+        <dc:Bounds x="-610" y="-80" width="2965" height="270" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_12ovckq_di" bpmnElement="Lane_12ovckq" isHorizontal="true">
+        <dc:Bounds x="-610" y="190" width="2965" height="640" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0wpxm42_di" bpmnElement="Lane_0wpxm42" isHorizontal="true">
+        <dc:Bounds x="-580" y="190" width="2935" height="320" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0nvrid9_di" bpmnElement="Lane_0nvrid9" isHorizontal="true">
+        <dc:Bounds x="-580" y="510" width="2935" height="320" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Request_di" bpmnElement="Task_Request">
+        <dc:Bounds x="-410" y="0" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Need_di" bpmnElement="Start_Need">
+        <dc:Bounds x="-538" y="22" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-552" y="58" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Forbidden_di" bpmnElement="End_Forbidden">
+        <dc:Bounds x="452" y="2" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="427" y="-22" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Blocked_di" bpmnElement="End_Blocked">
+        <dc:Bounds x="1042" y="-8" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1030" y="-45.5" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Retry_di" bpmnElement="End_Retry">
+        <dc:Bounds x="1232" y="-8" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1223" y="-45.5" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Auth_di" bpmnElement="Task_Auth">
+        <dc:Bounds x="-410" y="290" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Auth_di" bpmnElement="Gw_Auth" isMarkerVisible="true">
+        <dc:Bounds x="-125" y="305" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-134" y="365" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Denied_di" bpmnElement="End_Denied">
+        <dc:Bounds x="-118" y="22" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-132" y="-2" width="63" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Find_di" bpmnElement="Task_Find">
+        <dc:Bounds x="50" y="290" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Cache_di" bpmnElement="Gw_Cache" isMarkerVisible="true">
+        <dc:Bounds x="275" y="305" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="268" y="267.5" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Ssrf_di" bpmnElement="Task_Ssrf">
+        <dc:Bounds x="250" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Ssrf_di" bpmnElement="Gw_Ssrf" isMarkerVisible="true">
+        <dc:Bounds x="445" y="425" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="441" y="485" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Fetch_di" bpmnElement="Task_Fetch">
+        <dc:Bounds x="620" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Pending_di" bpmnElement="Task_Pending">
+        <dc:Bounds x="800" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Status_di" bpmnElement="Gw_Status" isMarkerVisible="true">
+        <dc:Bounds x="965" y="305" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1025" y="323" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Claim_di" bpmnElement="Task_Claim">
+        <dc:Bounds x="1110" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Engines_di" bpmnElement="Task_Engines">
+        <dc:Bounds x="1330" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Timer_Wait_di" bpmnElement="Timer_Wait">
+        <dc:Bounds x="1002" y="652" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="984" y="698" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Worst_di" bpmnElement="Task_Worst">
+        <dc:Bounds x="1490" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Verdict_di" bpmnElement="Gw_Verdict" isMarkerVisible="true">
+        <dc:Bounds x="1675" y="645" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1679" y="705" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Stream_di" bpmnElement="Task_Stream">
+        <dc:Bounds x="1280" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_Wait_di" bpmnElement="Gw_Wait" isMarkerVisible="true">
+        <dc:Bounds x="1215" y="425" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1139" y="443" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Quarantine_di" bpmnElement="End_Quarantine">
+        <dc:Bounds x="1542" y="-8" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1535" y="-32" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Ok_di" bpmnElement="End_Ok">
+        <dc:Bounds x="1402" y="-8" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1382" y="-32" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_di" bpmnElement="Flow_Start">
+        <di:waypoint x="-502" y="40" />
+        <di:waypoint x="-410" y="40" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_Auth_di" bpmnElement="Flow_To_Auth">
+        <di:waypoint x="-360" y="80" />
+        <di:waypoint x="-360" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_GwAuth_di" bpmnElement="Flow_To_GwAuth">
+        <di:waypoint x="-310" y="330" />
+        <di:waypoint x="-125" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Auth_No_di" bpmnElement="Flow_Auth_No">
+        <di:waypoint x="-100" y="305" />
+        <di:waypoint x="-100" y="58" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-127" y="172" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Auth_Yes_di" bpmnElement="Flow_Auth_Yes">
+        <di:waypoint x="-75" y="330" />
+        <di:waypoint x="50" y="330" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-22" y="307" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_Cache_di" bpmnElement="Flow_To_Cache">
+        <di:waypoint x="150" y="330" />
+        <di:waypoint x="275" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Cache_Yes_di" bpmnElement="Flow_Cache_Yes">
+        <di:waypoint x="325" y="330" />
+        <di:waypoint x="965" y="330" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="640" y="305" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Cache_No_di" bpmnElement="Flow_Cache_No">
+        <di:waypoint x="300" y="355" />
+        <di:waypoint x="300" y="410" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="307" y="376" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_GwSsrf_di" bpmnElement="Flow_To_GwSsrf">
+        <di:waypoint x="350" y="450" />
+        <di:waypoint x="445" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Ssrf_No_di" bpmnElement="Flow_Ssrf_No">
+        <di:waypoint x="470" y="425" />
+        <di:waypoint x="470" y="38" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="443" y="223" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Ssrf_Yes_di" bpmnElement="Flow_Ssrf_Yes">
+        <di:waypoint x="495" y="450" />
+        <di:waypoint x="620" y="450" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="548" y="427" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_Pending_di" bpmnElement="Flow_To_Pending">
+        <di:waypoint x="720" y="450" />
+        <di:waypoint x="800" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Pending_Status_di" bpmnElement="Flow_Pending_Status">
+        <di:waypoint x="900" y="450" />
+        <di:waypoint x="990" y="450" />
+        <di:waypoint x="990" y="355" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Status_Block_di" bpmnElement="Flow_Status_Block">
+        <di:waypoint x="990" y="305" />
+        <di:waypoint x="990" y="10" />
+        <di:waypoint x="1042" y="10" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="980" y="-9" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Status_Pending_di" bpmnElement="Flow_Status_Pending">
+        <di:waypoint x="1015" y="330" />
+        <di:waypoint x="1050" y="330" />
+        <di:waypoint x="1050" y="260" />
+        <di:waypoint x="1280" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1158.9999999999995" y="243" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Fail_di" bpmnElement="Flow_Fail">
+        <di:waypoint x="1700" y="645" />
+        <di:waypoint x="1700" y="390" />
+        <di:waypoint x="1140" y="390" />
+        <di:waypoint x="1140" y="10" />
+        <di:waypoint x="1078" y="10" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1409" y="368" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Pass_di" bpmnElement="Flow_Pass">
+        <di:waypoint x="1700" y="645" />
+        <di:waypoint x="1700" y="320" />
+        <di:waypoint x="1330" y="320" />
+        <di:waypoint x="1330" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1465" y="305" width="29" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Stream_Ok_di" bpmnElement="Flow_Stream_Ok">
+        <di:waypoint x="1380" y="260" />
+        <di:waypoint x="1420" y="260" />
+        <di:waypoint x="1420" y="28" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Wait_No_di" bpmnElement="Flow_Wait_No">
+        <di:waypoint x="1240" y="425" />
+        <di:waypoint x="1240" y="348" />
+        <di:waypoint x="1330" y="348" />
+        <di:waypoint x="1330" y="300" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1311" y="327" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Wait_Yes_di" bpmnElement="Flow_Wait_Yes">
+        <di:waypoint x="1240" y="475" />
+        <di:waypoint x="1240" y="554" />
+        <di:waypoint x="1020" y="554" />
+        <di:waypoint x="1020" y="652" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1249" y="506" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_After_Timer_di" bpmnElement="Flow_After_Timer">
+        <di:waypoint x="1038" y="670" />
+        <di:waypoint x="1110" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Claim_di" bpmnElement="Flow_Claim">
+        <di:waypoint x="1210" y="670" />
+        <di:waypoint x="1330" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Engines_di" bpmnElement="Flow_Engines">
+        <di:waypoint x="1430" y="670" />
+        <di:waypoint x="1490" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Worst_di" bpmnElement="Flow_Worst">
+        <di:waypoint x="1590" y="670" />
+        <di:waypoint x="1675" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Error_di" bpmnElement="Flow_Error">
+        <di:waypoint x="1700" y="645" />
+        <di:waypoint x="1700" y="360" />
+        <di:waypoint x="1560" y="360" />
+        <di:waypoint x="1560" y="28" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1610" y="343" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0bb8kzi_di" bpmnElement="Flow_0bb8kzi">
+        <di:waypoint x="1330" y="300" />
+        <di:waypoint x="1330" y="348" />
+        <di:waypoint x="1240" y="348" />
+        <di:waypoint x="1240" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tfg1xr_di" bpmnElement="Flow_0tfg1xr">
+        <di:waypoint x="1330" y="220" />
+        <di:waypoint x="1330" y="109" />
+        <di:waypoint x="1250" y="109" />
+        <di:waypoint x="1250" y="28" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
