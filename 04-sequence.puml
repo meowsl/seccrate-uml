@@ -1,0 +1,132 @@
+@startuml 04-sequence
+' Реализация прецедента «Скачать артефакт» вызовами методов.
+' Имена классов и методов совпадают с диаграммой классов.
+' Фрагменты совпадают с ромбами диаграммы деятельности.
+
+skinparam defaultFontName DejaVu Sans
+skinparam shadowing false
+skinparam dpi 130
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #3D4A3E
+  LifeLineBorderColor #3D4A3E
+  ParticipantBorderColor #3D4A3E
+  ParticipantBackgroundColor #F7F4EC
+  GroupBackgroundColor #FBFBF8
+  GroupBorderColor #6B705C
+  FontSize 12
+}
+
+title Диаграмма последовательности\nВызовы методов прецедента «Скачать артефакт»\n(пакета ещё нет в кэше proxy)
+
+autonumber
+
+actor "Разработчик" as Dev
+participant ":Gateway" as GW <<boundary>>
+participant ":ResolveAPI" as API <<control>>
+participant ":AccessControl" as ACL <<control>>
+participant ":ArtifactIndex" as IDX <<control>>
+participant ":UpstreamClient" as UP <<control>>
+participant ":SsrfGuard" as SSRF <<control>>
+participant ":BlobStore" as Blob <<control>>
+participant ":Worker" as Worker <<control>>
+participant ":ScanQueue" as Queue <<control>>
+participant ":ScanEngine" as Engine <<control>>
+participant ":Scanner" as Scan <<interface>>
+participant ":Findings" as Findings <<control>>
+
+Dev -> GW: GET /repository/<repo>/<path>, токен
+GW -> API: resolve(body)
+API -> API: _user_from_token(token)
+API --> API: user: User
+
+API -> ACL: can_gateway_read(user, repo, scopes)
+ACL --> API: bool
+API -> ACL: can_gateway_read_path(user, repo, path, scopes)
+ACL --> API: bool
+
+break хотя бы один вызов вернул false
+  API --> GW: 403
+  GW --> Dev: отказ, файла нет
+end
+
+API -> IDX: find_artifact(repo, path)
+IDX --> API: null
+
+API -> UP: fetch_miss(user, repo, path)
+UP -> UP: fetch_upstream(user, repo, path)
+UP -> SSRF: assert_safe_http_url(url)
+SSRF --> UP: адрес разрешён
+UP -> Blob: put_bytes(sha256, data, contentType)
+create "artifact: Artifact" as Art <<entity>>
+UP -> Art: status = pending
+UP --> API: artifact
+
+API -> IDX: ensure_pending_scan(artifact, "proxy")
+create "job: ScanJob" as Job <<entity>>
+IDX -> Job: origin = proxy, priority = live
+IDX --> API: job
+
+API -> IDX: effective_sync_wait(artifact)
+
+opt значение > 0: не Docker и файл небольшой
+  par клиент ещё на линии
+    API -> IDX: wait_ready(artifact.id, seconds)
+  else воркер в это же время
+    Worker -> Queue: claim_queued_scan()
+    Queue --> Worker: job
+    Worker -> Worker: process_job(job)
+    Worker -> Blob: download_to(sha256, tmp)
+    Worker -> Engine: run_all(path, engines)
+    loop имя из effective_scanners(repository)
+      Engine -> Scan: scan(path)
+      note right
+        Объект класса
+        GrypeScanner, TrivyScanner
+        или OsvScanner
+      end note
+      Scan --> Engine: ScanOutcome
+    end
+    Worker -> Engine: worst(outcomes, blockSeverities)
+    Engine --> Worker: PASS, FAIL или ERROR
+    alt PASS
+      Worker -> Art: status = available
+      create "verdict: ScanVerdict" as Verdict <<entity>>
+      Worker -> Verdict: verdict = PASS
+    else FAIL
+      Worker -> Findings: sync_findings(artifact.id, items)
+      create "finding: Finding" as Find <<entity>>
+      Findings -> Find: vulnId, severity, firstSeenAt
+      Worker -> Art: status = blocked
+    else ERROR
+      Worker -> Art: status = quarantine
+    end
+  end
+end
+
+API -> IDX: decision_for_get(artifact)
+
+alt action = stream
+  IDX --> API: sha256, status 200
+  API --> GW: можно отдавать
+  GW -> API: stream_blob(sha256)
+  API -> Blob: прочитать объект
+  Blob --> Dev: байты файла
+else blocked, pending или quarantine
+  IDX --> API: SeccrateError
+  API --> GW: карточка или Retry-After
+  GW --> Dev: файла нет
+end
+
+legend bottom
+  Стрелка — вызов метода. Имя класса на линии жизни и имя метода есть на диаграмме классов.
+  break — нет права, сценарий обрывается (ромб «доступ» на деятельности).
+  opt — ждать скан только если effective_sync_wait > 0.
+  par — wait_ready и process_job идут одновременно.
+  loop — run_all по очереди вызывает scan у каждого включённого сканера.
+  alt — ровно одна ветка вердикта и ровно один ответ клиенту.
+endlegend
+
+@enduml

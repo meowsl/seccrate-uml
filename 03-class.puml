@@ -1,0 +1,177 @@
+@startuml 03-class
+' Классы, которые реализуют прецедент «Скачать артефакт».
+' У каждого метода есть стрелка с тем же именем на диаграмме последовательности.
+
+skinparam defaultFontName DejaVu Sans
+skinparam shadowing false
+skinparam dpi 140
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam classAttributeFontSize 11
+skinparam wrapWidth 220
+skinparam nodesep 16
+skinparam ranksep 22
+
+title Диаграмма классов\nКто выполняет прецедент «Скачать артефакт»
+
+skinparam package {
+  BackgroundColor #FBFBF8
+  BorderColor #3D4A3E
+  FontStyle bold
+}
+
+package "Граница и управление" #EEF3FA {
+  class Gateway <<boundary>> {
+    +handleRepository(repo, path, token)
+    +streamBlob(sha256)
+  }
+  class ResolveAPI <<control>> {
+    +resolve(body): decision
+    +_user_from_token(token): User
+    +stream_blob(sha256)
+  }
+  class AccessControl <<control>> {
+    +can_gateway_read(user, repo, scopes): bool
+    +can_gateway_read_path(user, repo, path, scopes): bool
+  }
+  class ArtifactIndex <<control>> {
+    +find_artifact(repo, path): Artifact
+    +ensure_pending_scan(artifact, origin): ScanJob
+    +wait_ready(artifactId, seconds)
+    +decision_for_get(artifact): decision
+    +effective_sync_wait(artifact): int
+  }
+  class UpstreamClient <<control>> {
+    +fetch_miss(user, repo, path): Artifact
+    +fetch_upstream(user, repo, path)
+  }
+  class SsrfGuard <<control>> {
+    +assert_safe_http_url(url)
+  }
+  class BlobStore <<control>> {
+    +put_bytes(sha256, data, contentType)
+    +download_to(sha256, dest)
+  }
+  class Worker <<control>> {
+    +run()
+    +process_job(job)
+  }
+  class ScanQueue <<control>> {
+    +claim_queued_scan(): ScanJob
+  }
+  class ScanEngine <<control>> {
+    +run_all(path, engines): ScanOutcome[]
+    +worst(outcomes, threshold): String
+  }
+  class Findings <<control>> {
+    +sync_findings(artifactId, items)
+  }
+}
+
+package "Сканеры" #FBF3F0 {
+  interface Scanner {
+    +scan(path): ScanOutcome
+  }
+  class GrypeScanner
+  class TrivyScanner
+  class OsvScanner
+}
+
+package "Сущности" #F4F7F0 {
+  class User <<entity>> {
+    username
+    source
+    isActive
+  }
+  class Repository <<entity>> {
+    name
+    type: hosted | proxy | group
+    format
+    blockSeverities
+    upstreamUrl
+  }
+  class Artifact <<entity>> {
+    path
+    sha256
+    status
+  }
+  class Blob <<entity>> {
+    sha256
+    s3Key
+    size
+  }
+  class ScanJob <<entity>> {
+    status
+    origin
+    priority
+  }
+  class ScanVerdict <<entity>> {
+    fingerprint
+    verdict
+  }
+  class Finding <<entity>> {
+    vulnId
+    severity
+    scanner
+    firstSeenAt
+    status
+  }
+  enum ArtifactStatus {
+    pending
+    quarantine
+    blocked
+    available
+    imported_unscanned
+  }
+}
+
+Gateway --> ResolveAPI
+ResolveAPI --> AccessControl
+ResolveAPI --> ArtifactIndex
+ResolveAPI --> UpstreamClient
+UpstreamClient --> SsrfGuard
+UpstreamClient --> BlobStore
+Worker --> ScanQueue
+Worker --> ScanEngine
+Worker --> BlobStore
+Worker --> Findings
+ScanEngine --> "1..*" Scanner
+
+GrypeScanner ..|> Scanner
+TrivyScanner ..|> Scanner
+OsvScanner ..|> Scanner
+
+User "1" --> "*" Repository : читает по выдаче
+
+Repository "1" *-- "0..*" Artifact
+Artifact "*" --> "1" Blob
+Artifact "1" *-- "0..*" ScanJob
+Artifact "1" *-- "0..*" ScanVerdict
+Artifact "1" *-- "0..*" Finding
+Artifact --> ArtifactStatus
+
+note bottom of ArtifactIndex
+  В коде это функции
+  services/gateway.py:
+  find_artifact, ensure_pending_scan,
+  wait_ready, decision_for_get.
+  На диаграмме они собраны в один класс,
+  чтобы на последовательности
+  у каждой стрелки был хозяин.
+end note
+
+note bottom of Scanner
+  run_all создаёт объект
+  GrypeScanner, TrivyScanner
+  или OsvScanner и вызывает scan.
+  В коде это scanners/engines.py.
+end note
+
+legend bottom
+  Методы со знаком + — те же имена, что на стрелках последовательности.
+  <<boundary>> принимает запрос клиента. <<control>> выполняет шаг. <<entity>> хранит данные.
+  Залитый ромб — композиция: задача, вердикт и уязвимость живут вместе с артефактом.
+  Пунктир с треугольником — класс исполняет интерфейс Scanner.
+endlegend
+
+@enduml

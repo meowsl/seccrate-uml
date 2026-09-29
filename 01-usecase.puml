@@ -1,0 +1,151 @@
+@startuml 01-usecase
+' Диаграмма прецедентов SecCrate (UML 2).
+' Колонки: люди | цели | обязательные и редкие шаги | внешние системы.
+
+skinparam defaultFontName DejaVu Sans
+skinparam shadowing false
+skinparam dpi 150
+skinparam roundcorner 10
+skinparam nodesep 10
+skinparam ranksep 18
+skinparam linetype ortho
+
+skinparam usecase {
+  BackgroundColor #F7F4EC
+  BorderColor #3D4A3E
+  FontSize 13
+}
+skinparam actor {
+  FontSize 13
+}
+skinparam rectangle {
+  BackgroundColor #FBFBF8
+  BorderColor #3D4A3E
+}
+
+title Диаграмма прецедентов\nЗелёный овал «Скачать артефакт» раскрывают схемы 1.2, 1.3 и 1.4
+
+actor "Клиент\nпакетов" as Client
+actor "Разработчик" as Dev
+actor "CI-робот" as Robot
+actor "Специалист\nИБ" as Sec
+actor "Владелец\n(DevOps)" as Owner
+actor "Администратор" as Admin
+
+actor "Внешний\nregistry" as Upstream
+actor "Сканеры\nGrype, Trivy, OSV" as Engines
+actor "Каталог\nLDAP / OIDC" as IdP
+
+Client -[hidden]down- Dev
+Dev -[hidden]down- Robot
+Robot -[hidden]down- Sec
+Sec -[hidden]down- Owner
+Owner -[hidden]down- Admin
+
+Dev -up-|> Client
+Robot -up-|> Client
+
+rectangle "SecCrate" {
+  usecase "Скачать\nартефакт" as UC_Pull #CDECC8
+  usecase "Опубликовать\nартефакт" as UC_Push
+  usecase "Проверить план\nустановки" as UC_Gate
+  usecase "Войти\nв систему" as UC_Login
+  usecase "Разобрать\nуязвимость" as UC_Finding
+  usecase "Поставить метку\ntrusted" as UC_Trust
+  usecase "Настроить порог\nблокировки" as UC_Policy
+  usecase "Смотреть\nаудит" as UC_Audit
+  usecase "Создать\nрепозиторий" as UC_Repo
+  usecase "Выдать\nдоступ" as UC_Grant
+  usecase "Импортировать\nиз Nexus" as UC_Nexus
+  usecase "Очистить\nхранилище" as UC_Clean
+  usecase "Обновить базу\nуязвимостей" as UC_VulnDb
+  usecase "Сделать\nрезервную копию" as UC_Backup
+  usecase "Импортировать\nпользователей LDAP" as UC_Ldap
+
+  usecase "Проверить\nправа" as UC_Acl
+  usecase "Получить вердикт\nсканирования" as UC_Verdict
+  usecase "Подождать\nпроверку" as UC_Wait
+  usecase "Записать\nсобытие аудита" as UC_AuditWrite
+  usecase "Предпросмотр\nкорзины" as UC_Preview
+
+  UC_Pull -[hidden]down- UC_Push
+  UC_Push -[hidden]down- UC_Gate
+  UC_Gate -[hidden]down- UC_Login
+  UC_Login -[hidden]down- UC_Finding
+  UC_Finding -[hidden]down- UC_Trust
+  UC_Trust -[hidden]down- UC_Policy
+  UC_Policy -[hidden]down- UC_Audit
+  UC_Audit -[hidden]down- UC_Repo
+  UC_Repo -[hidden]down- UC_Grant
+  UC_Grant -[hidden]down- UC_Nexus
+  UC_Nexus -[hidden]down- UC_Clean
+  UC_Clean -[hidden]down- UC_VulnDb
+  UC_VulnDb -[hidden]down- UC_Backup
+  UC_Backup -[hidden]down- UC_Ldap
+
+  UC_Pull -[hidden]right- UC_Acl
+  UC_Acl -[hidden]down- UC_Verdict
+  UC_Verdict -[hidden]down- UC_Wait
+  UC_Wait -[hidden]down- UC_AuditWrite
+  UC_AuditWrite -[hidden]down- UC_Preview
+}
+
+Upstream -[hidden]down- Engines
+Engines -[hidden]down- IdP
+UC_Acl -[hidden]right- Upstream
+
+Client -right-> UC_Pull
+Client -right-> UC_Push
+Dev -right-> UC_Gate
+Dev -right-> UC_Login
+Sec -right-> UC_Finding
+Sec -right-> UC_Trust
+Sec -right-> UC_Policy
+Sec -right-> UC_Audit
+Owner -right-> UC_Repo
+Owner -right-> UC_Grant
+Owner -right-> UC_Nexus
+Owner -right-> UC_Clean
+Admin -right-> UC_VulnDb
+Admin -right-> UC_Backup
+Admin -right-> UC_Ldap
+
+note right of UC_Login
+  Этим сценарием пользуются
+  все люди на схеме.
+  CI-робот в сайт не входит.
+end note
+
+UC_Pull ..> UC_Acl : <<include>>
+UC_Push ..> UC_Acl : <<include>>
+UC_Pull ..> UC_Verdict : <<include>>
+UC_Push ..> UC_Verdict : <<include>>
+UC_Clean ..> UC_Preview : <<include>>
+UC_Finding ..> UC_AuditWrite : <<include>>
+UC_Grant ..> UC_AuditWrite : <<include>>
+UC_Trust ..> UC_AuditWrite : <<include>>
+
+UC_Wait ..> UC_Pull : <<extend>>\n[pending и не Docker]
+UC_Trust ..> UC_Finding : <<extend>>\n[нужно исключение]
+
+UC_Pull -right-> Upstream
+UC_Verdict -right-> Engines
+UC_VulnDb -right-> Engines
+UC_Login -right-> IdP
+UC_Ldap -right-> IdP
+
+note right of Robot
+  В сайт не входит.
+  Только токен pull / push.
+  Скачивать и публиковать
+  может, потому что он
+  тоже «клиент пакетов».
+end note
+
+legend bottom
+  1.2 деятельность — его шаги. 1.3 классы — кто эти шаги делает. 1.4 последовательность — вызовы их методов.
+  <<include>> выполняется всегда
+  <<extend>> дополнительные действия
+endlegend
+
+@enduml
