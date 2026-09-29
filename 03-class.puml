@@ -22,55 +22,56 @@ skinparam package {
 
 package "Граница и управление" #EEF3FA {
   class Gateway <<boundary>> {
-    +handleRepository(repo, path, token)
-    +streamBlob(sha256)
+    +handleRepository(w, r)
+    +streamBlob(w, r, out)
   }
   class ResolveAPI <<control>> {
-    +resolve(body): decision
-    +_user_from_token(token): User
-    +stream_blob(sha256)
+    +resolve(body, db, authorization): dict
+    +_user_from_token(db, raw, api_key): User
+    +_reject(exc): dict
+    +stream_blob(sha256, authorization, range_header)
   }
   class AccessControl <<control>> {
-    +can_gateway_read(user, repo, scopes): bool
-    +can_gateway_read_path(user, repo, path, scopes): bool
+    +can_gateway_read(db, user, repo, scopes, hardened): bool
+    +can_gateway_read_path(db, user, repo, path, scopes, hardened): bool
   }
   class ArtifactIndex <<control>> {
-    +find_artifact(repo, path): Artifact
-    +ensure_pending_scan(artifact, origin): ScanJob
-    +wait_ready(artifactId, seconds)
-    +decision_for_get(artifact): decision
-    +effective_sync_wait(artifact): int
+    +find_artifact(db, repo, path): Artifact
+    +ensure_pending_scan(db, artifact, origin): ScanJob
+    +effective_sync_wait(db, artifact, settings): int
+    +wait_ready(factory, artifactId, seconds, db, art)
+    +decision_for_get(db, settings, artifact): dict
   }
   class UpstreamClient <<control>> {
-    +fetch_miss(user, repo, path): Artifact
-    +fetch_upstream(user, repo, path)
+    +fetch_miss(db, s3, bucket, user, repo, path): Artifact
+    +fetch_upstream(db, s3, bucket, user, repo, path, timeout)
   }
   class SsrfGuard <<control>> {
-    +assert_safe_http_url(url)
+    +assert_safe_http_url(url, hardened, allowlist): str
   }
   class BlobStore <<control>> {
-    +put_bytes(sha256, data, contentType)
-    +download_to(sha256, dest)
+    +put_bytes(client, bucket, sha256, data, content_type): str
+    +download_to(client, bucket, sha256, dest)
   }
   class Worker <<control>> {
+    +process_job(db, client, bucket, job)
     +run()
-    +process_job(job)
   }
   class ScanQueue <<control>> {
-    +claim_queued_scan(): ScanJob
+    +claim_queued_scan(db): ScanJob
   }
   class ScanEngine <<control>> {
-    +run_all(path, engines): ScanOutcome[]
-    +worst(outcomes, threshold): String
+    +run_all(path, engines, kind, osv_lockfile): ScanOutcome[]
+    +worst(outcomes, threshold, fail_on_unknown): str
   }
   class Findings <<control>> {
-    +sync_findings(artifactId, items)
+    +sync_findings(db, art, items, sla_due): int
   }
 }
 
 package "Сканеры" #FBF3F0 {
-  interface Scanner {
-    +scan(path): ScanOutcome
+  abstract class Scanner {
+    +scan(path, extra): ScanOutcome
   }
   class GrypeScanner
   class TrivyScanner
@@ -137,9 +138,9 @@ Worker --> BlobStore
 Worker --> Findings
 ScanEngine --> "1..*" Scanner
 
-GrypeScanner ..|> Scanner
-TrivyScanner ..|> Scanner
-OsvScanner ..|> Scanner
+Scanner <|-- GrypeScanner
+Scanner <|-- TrivyScanner
+Scanner <|-- OsvScanner
 
 User "1" --> "*" Repository : читает по выдаче
 
@@ -149,16 +150,6 @@ Artifact "1" *-- "0..*" ScanJob
 Artifact "1" *-- "0..*" ScanVerdict
 Artifact "1" *-- "0..*" Finding
 Artifact --> ArtifactStatus
-
-note bottom of ArtifactIndex
-  В коде это функции
-  services/gateway.py:
-  find_artifact, ensure_pending_scan,
-  wait_ready, decision_for_get.
-  На диаграмме они собраны в один класс,
-  чтобы на последовательности
-  у каждой стрелки был хозяин.
-end note
 
 note bottom of Scanner
   run_all создаёт объект
@@ -171,7 +162,7 @@ legend bottom
   Методы со знаком + — те же имена, что на стрелках последовательности.
   <<boundary>> принимает запрос клиента. <<control>> выполняет шаг. <<entity>> хранит данные.
   Залитый ромб — композиция: задача, вердикт и уязвимость живут вместе с артефактом.
-  Пунктир с треугольником — класс исполняет интерфейс Scanner.
+  Сплошная стрелка с треугольником — наследование: GrypeScanner, TrivyScanner и OsvScanner расширяют Scanner.
 endlegend
 
 @enduml

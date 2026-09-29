@@ -19,12 +19,12 @@ start
 :Запросить файл\nGET /repository/<repo>/<path>\nс токеном;
 
 |Gateway|
-:handleRepository(repo, path, token)\nPOST /internal/v1/gateway/resolve;
+:handleRepository(w, r)\nPOST /internal/v1/gateway/resolve;
 
 |ResolveAPI|
-:_user_from_token(token);
-:AccessControl.can_gateway_read(user, repo, scopes);
-:AccessControl.can_gateway_read_path(user, repo, path, scopes);
+:_user_from_token(db, token);
+:AccessControl.can_gateway_read(db, user, repo, scopes);
+:AccessControl.can_gateway_read_path(db, user, repo, path, scopes);
 
 if (оба вызова\nвернули true?) then (да)
 else (нет)
@@ -34,32 +34,32 @@ else (нет)
 endif
 
 |ResolveAPI|
-:ArtifactIndex.find_artifact(repo, path);
+:ArtifactIndex.find_artifact(db, repo, path);
 
 if (артефакт найден?) then (нет)
-  :UpstreamClient.fetch_miss(user, repo, path)\nвнутри: fetch_upstream;\nSsrfGuard.assert_safe_http_url(url);\nBlobStore.put_bytes(sha256, data);
-  :ArtifactIndex.ensure_pending_scan(artifact, "proxy")\nзадача ScanJob, origin=proxy, priority=live;
+  :UpstreamClient.fetch_miss(db, s3, bucket, user, repo, path)\nвнутри: fetch_upstream;\nSsrfGuard.assert_safe_http_url(url, hardened, allowlist);\nBlobStore.put_bytes(client, bucket, sha256, data, content_type);
+  :ArtifactIndex.ensure_pending_scan(db, artifact, "proxy")\nзадача ScanJob, origin=proxy, priority=live;
 else (да)
   :ensure_pending_scan\nничего не делает,\nесли статус уже не pending;
 endif
 
 if (effective_sync_wait > 0?\nне Docker и файл небольшой) then (да)
   |ResolveAPI|
-  :wait_ready(artifactId, секунды).\nОдновременно, фрагмент par:;
+  :wait_ready(factory, artifactId, seconds).\nОдновременно, фрагмент par:;
   |Worker|
-  :ScanQueue.claim_queued_scan()\nсначала live, SKIP LOCKED;
-  :process_job(job);
-  :BlobStore.download_to(sha256, файл);
+  :ScanQueue.claim_queued_scan(db)\nсначала live, SKIP LOCKED;
+  :process_job(db, client, bucket, job);
+  :BlobStore.download_to(client, bucket, sha256, файл);
   :ScanEngine.run_all(path, engines);
   repeat
-    :Scanner.scan(path)\nобъект GrypeScanner,\nTrivyScanner или OsvScanner;
+    :Scanner.scan(path, extra)\nобъект GrypeScanner,\nTrivyScanner или OsvScanner;
   repeat while (есть ещё\nвключённый сканер?) is (да)
   ->нет;
-  :ScanEngine.worst(outcomes,\nrepository.blockSeverities);
+  :ScanEngine.worst(outcomes, threshold);
   if (вердикт?) then (PASS)
     :artifact.status = available\nсохранить ScanVerdict;
   elseif (FAIL)
-    :Findings.sync_findings(artifactId, items)\nfirstSeenAt не сбрасывается;\nartifact.status = blocked;
+    :Findings.sync_findings(db, art, items, sla_due)\nfirstSeenAt не сбрасывается;\nartifact.status = blocked;
   else (ERROR)
     :artifact.status = quarantine\nстарые Finding не стираются;
   endif
@@ -69,11 +69,11 @@ else (нет)
 endif
 
 |ResolveAPI|
-:ArtifactIndex.decision_for_get(artifact);
+:ArtifactIndex.decision_for_get(db, settings, artifact);
 
 if (ответ action?) then (stream)
   |Gateway|
-  :streamBlob(sha256)\nGET /internal/v1/blobs/{sha256};
+  :streamBlob(w, r, out)\nGET /internal/v1/blobs/{sha256};
   |Разработчик|
   :Получить байты файла;
   stop
