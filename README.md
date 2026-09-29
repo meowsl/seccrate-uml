@@ -26,7 +26,6 @@
 | `ScanEngine.run_all`, `worst`, `Scanner.scan` | `backend/seccrate/scanners/engines.py` |
 | `Findings.sync_findings` | `backend/seccrate/services/artifact_view.py` |
 
-Имена в таблице — классы и методы в коде. У классов на Python методы статические: сессия базы, настройки и клиент хранилища передаются аргументами. `Scanner` — базовый класс, `GrypeScanner`, `TrivyScanner` и `OsvScanner` переопределяют `scan`.
 
 ## Описание простыми словами
 
@@ -45,4 +44,3 @@
 ## BPMN 2.0
 
 - `bpmn/diagram.bpmn`: процесс «Скачать артефакт» на уровне ролей и шагов.
-- `bpmn/methods.bpmn` и `bpmn/methods.svg`: тот же процесс на уровне методов. Каждая дорожка — класс с диаграммы 1.3, каждая задача — вызов его метода, как в диаграмме 1.4. Пересобрать: `python3 bpmn/render_methods.py`. Файл открывается в Camunda Modeler или на [demo.bpmn.io](https://demo.bpmn.io).
